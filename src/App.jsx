@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Header from "./components/Header.jsx";
 import Counter from "./components/counter/Counter.jsx";
 import { log } from "./log.js";
@@ -8,13 +8,16 @@ const App = () => {
 
   const [enteredNumber, setEnteredNumber] = useState(0);
   const [chosenCount, setChosenCount] = useState(0);
+  const inputRef = useRef();
 
   const handleChange = (event) => setEnteredNumber(+event.target.value);
 
   const handleSetClick = () => {
     setChosenCount(enteredNumber);
-    setEnteredNumber(0);
+    setEnteredNumber(inputRef.current.value);
   };
+
+  console.log(chosenCount);
 
   return (
     <>
@@ -22,7 +25,12 @@ const App = () => {
       <main>
         <section id="configure-counter">
           <h2>Set Counter</h2>
-          <input type="number" onChange={handleChange} value={enteredNumber} />
+          <input
+            ref={inputRef}
+            type="number"
+            onChange={handleChange}
+            value={enteredNumber}
+          />
           <button onClick={handleSetClick}>Set</button>
         </section>
         <Counter initialCount={chosenCount} />
