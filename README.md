@@ -35,7 +35,7 @@ When the app first loads, you’ll see this in the console:
 - - Calculating if is prime number
 - - <IconButton /> rendered
 - - - <MinusIcon /> rendered
-- - <CountOutput /> rendered
+- - <CounterOutput /> rendered
 - - <IconButton /> rendered
 - - - <PlusIcon /> rendered
 ```
@@ -83,7 +83,7 @@ Even though:
 - `<Counter />` might not need to re-render if initialCount is unchanged.
   React doesn’t know that — unless we tell it.
 
-#### ✅ Step 1: Prevent Unnecessary Re-renders with `React.memo`
+### ✅ Step 1: Prevent Unnecessary Re-renders with `React.memo`
 
 - Memoize `<Header />`
   In `Header.jsx:`
@@ -117,38 +117,8 @@ _💡 memo does a shallow comparison of props. Since `Header` has no props, it w
 import { useState, memo } from "react";
 // ... other imports
 
-const isPrime = (number) => {
-  // ... Prime number calculation logic here
-  return true;
-};
-
 const Counter = memo(({ initialCount }) => {
-  log("<Counter /> rendered", 1);
-  const initialCountIsPrime = isPrime(initialCount);
-
-  const [counter, setCounter] = useState(initialCount);
-
-  const handleDecrement = () => setCounter((prevCounter) => prevCounter - 1);
-
-  const handleIncrement = () => setCounter((prevCounter) => prevCounter + 1);
-
-  return (
-    <section className="counter">
-      <p className="counter-info">
-        The initial counter value was <strong>{initialCount}</strong>. It is{" "}
-        <strong>{initialCountIsPrime ? "a" : "not a"} prime number</strong>
-      </p>
-      <p>
-        <IconButton icon={MinusIcon} onClick={handleDecrement}>
-          Decrement
-        </IconButton>
-        <CounterOutput value={counter} />
-        <IconButton icon={PlusIcon} onClick={handleIncrement}>
-          Increment
-        </IconButton>
-      </p>
-    </section>
-  );
+// ... component logic
 });
 
 export default Counter;
@@ -157,7 +127,7 @@ export default Counter;
 
 _💡 Now, `<Counter />` will only re-render if `initialCount` actually changes. Typing in the input (which updates enteredNumber) will no longer cause <Counter /> to re-render!_
 
-### 📊 Expected Log Behavior After Step 1
+#### 📊 Expected Log Behavior After Step 1
 
 - Initial Render (unchanged):
 
@@ -168,7 +138,7 @@ _💡 Now, `<Counter />` will only re-render if `initialCount` actually changes.
 - - Calculating if is prime number
 - - <IconButton /> rendered
 - - - <MinusIcon /> rendered
-- - <CountOutput /> rendered
+- - <CounterOutput /> rendered
 - - <IconButton /> rendered
 - - - <PlusIcon /> rendered
 ```
@@ -180,3 +150,125 @@ _💡 Now, `<Counter />` will only re-render if `initialCount` actually changes.
 ```
 
 `Header` & `Counter` re-renders eliminated.
+
+### 🧵 Step 2: Stabilize Handlers with `useCallback`
+
+Even after memoizing components, function props can break memoization because React creates new function references on every render.
+
+#### The Problem:
+
+In `Counter.jsx`:
+
+```bash
+const handleIncrement = () => setCounter(); // New function every render!
+```
+
+```bash
+const handleDecrement = () => setCounter(); // New function every render!
+```
+
+- Passed to `<IconButton onClick={handleIncrement} />`
+- Passed to `<IconButton onClick={handleDecrement} />`
+- Even if `IconButton` is memoized, new `onClick` = new props = re-render.
+
+#### The Fix: `useCallback`
+
+```bash
+ const handleIncrement = useCallback(
+    () => setCounter((prevCounter) => prevCounter + 1),
+    []
+  );
+```
+
+```bash
+const handleDecrement = useCallback(
+  () => setCounter((prevCounter) => prevCounter - 1),
+  []
+);
+```
+
+#### Also Memoize Reusable Components
+
+We also wrapped: `IconButton.jsx` with `memo`
+
+```bash
+import { memo } from "react";
+
+const IconButton = memo(({ children, icon, ...props }) => {
+ // ... JSX
+});
+
+export default IconButton;
+```
+
+#### 📊 Expected Log Behavior After Step 2
+
+```bash
+- <Counter /> rendered
+- - Calculating if is prime number
+- - <CounterOutput /> rendered
+```
+
+### 🧮 Step 3: Optimizing Expensive Calculations with `useMemo`
+
+Even after stabilizing components and handlers, we still see this in the logs every time `<Counter />` re-renders:
+
+```bash
+- - Calculating if is prime number
+```
+
+This happens because `isPrime(initialCount)` is called directly during render, and every render recalculates it, even if `initialCount` hasn’t changed.
+
+#### The Problem:
+
+```bash
+const initialCountIsPrime = isPrime(initialCount); // Runs on every render!
+```
+
+- Expensive calculation (looping up to √n) runs unnecessarily.
+- Wastes CPU, especially if initialCount is large or renders are frequent.
+
+#### The Fix: `useMemo`
+
+```bash
+const initialCountIsPrime = useMemo(
+  () => isPrime(initialCount),
+  [initialCount] // Only recalculate when this dependency changes
+);
+```
+
+- Now, `isPrime` runs only once on mount, and only again if `initialCount` changes.
+
+#### 📊 Expected Log Behavior After Step 3
+
+```bash
+- <Counter /> rendered
+- - <CounterOutput /> rendered
+```
+
+## 🎓 Final Thoughts: Mastering React’s Render Behavior
+
+You’ve now walked through a real-world journey of React optimization — from naive re-renders to a finely tuned component tree.
+
+#### By applying:
+
+- React.memo → to skip unnecessary renders
+- useCallback → to stabilize function props
+- useMemo → to cache expensive computations
+  …you’ve transformed your app from “it works” to “it works efficiently”, the hallmark of production-grade React.
+
+### 🧭 Key Takeaways
+
+- ✅ Re-renders are normal — but unnecessary ones are avoidable.
+- ✅ Memoization is a tool, not a default — apply it intentionally.
+- ✅ Stable references (via useCallback) are essential for preserving memoization.
+- ✅ Expensive calculations belong in useMemo — not in the render body.
+- ✅ Logging and observation are your best friends for debugging renders.
+
+## 💬 Thank You for Learning with Us
+
+Whether you’re prepping for interviews, leveling up at work, or just curious — you’ve taken the time to look behind the scenes. That’s what makes great developers.
+
+#### Keep experimenting. Keep logging. Keep asking “why?”
+
+Happy coding! 🎉
