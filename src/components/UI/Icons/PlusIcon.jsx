@@ -1,6 +1,7 @@
+import { memo } from "react";
 import { log } from "../../../log.js";
 
-export default function PlusIcon(props) {
+const PlusIcon = memo((props) => {
   log("<PlusIcon /> rendered", 3);
 
   return (
@@ -19,4 +20,6 @@ export default function PlusIcon(props) {
       />
     </svg>
   );
-}
+});
+
+export default PlusIcon;

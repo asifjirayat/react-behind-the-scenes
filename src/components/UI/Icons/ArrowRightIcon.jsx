@@ -1,7 +1,8 @@
-import { log } from '../../../log.js';
+import { memo } from "react";
+import { log } from "../../../log.js";
 
-export default function ArrowRightIcon(props) {
-  log('<ArrowRightIcon /> rendered', 3);
+const ArrowRightIcon = memo((props) => {
+  log("<ArrowRightIcon /> rendered", 3);
 
   return (
     <svg
@@ -19,4 +20,6 @@ export default function ArrowRightIcon(props) {
       />
     </svg>
   );
-}
+});
+
+export default ArrowRightIcon;
